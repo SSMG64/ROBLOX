@@ -1,0 +1,43 @@
+name: Client Installer Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  windows-installer:
+    name: Windows Installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for Installer content
+        run: |
+          if (!(Test-Path -Path "Installer")) { Write-Host "Installer directory not found, skipping"; exit 0 }
+          Write-Host "Installer directory found"
+        shell: pwsh
+      - name: Run Windows installer build scripts if present
+        run: |
+          if (Test-Path Installer) {
+            if (Test-Path Installer\RccServiceSetup) { Write-Host 'Found RccServiceSetup - custom steps may be required' }
+            echo "No universal installer script detected; add project-specific commands here"
+          }
+        shell: pwsh
+
+  macos-installer:
+    name: macOS Installer
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for Installer content
+        run: |
+          if [ ! -d "Installer" ]; then
+            echo "Installer directory not found, skipping"
+            exit 0
+          fi
+          echo "Installer directory found"
+      - name: Run macOS installer steps if present
+        run: |
+          echo "No universal macOS installer script detected; add project-specific commands here"

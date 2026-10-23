@@ -1,0 +1,17 @@
+name: Optimize Images (ImgBot)
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run ImgBot
+        uses: ImgBotApp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

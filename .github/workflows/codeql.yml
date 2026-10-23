@@ -24,20 +24,31 @@ permissions:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        language:
-          - cpp
+        include:
+          - language: cpp
+            os: windows-latest
+          - language: python
+            os: ubuntu-latest
+          - language: objective-c
+            os: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
+      - name: Retarget Visual Studio toolset to v143 (Windows C++)
+        if: matrix.language == 'cpp' && matrix.os == 'windows-latest'
+        run: |
+          git ls-files "**/*.vcxproj" | %{ (Get-Content $_) -replace 'v141_xp','v143' | Set-Content $_ }
+        shell: pwsh
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-      - name: Autobuild
+      - name: Autobuild (only for C/C++)
+        if: matrix.language == 'cpp'
         uses: github/codeql-action/autobuild@v4
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

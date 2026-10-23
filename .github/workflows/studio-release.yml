@@ -1,0 +1,40 @@
+name: Studio Release Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  windows:
+    name: Windows Studio Release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Retarget Visual Studio toolset to v143
+        run: |
+          git ls-files "**/*.vcxproj" | %{ (Get-Content $_) -replace 'v141_xp','v143' | Set-Content $_ }
+        shell: pwsh
+      - name: Build RobloxStudio (Release) if project exists
+        run: |
+          $proj = Get-ChildItem -Path . -Recurse -Filter "RobloxStudio*.vcxproj" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($proj) {
+            msbuild.exe $proj.FullName /m /p:Configuration=Release /p:Platform=x64
+          } else {
+            Write-Host "RobloxStudio project not found in repo, attempting solution-level build"
+            msbuild.exe Roblox.sln /m /p:Configuration=Release /p:Platform=x64
+          }
+        shell: pwsh
+
+  macos:
+    name: macOS Studio Release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build Studio for macOS if Xcode project found
+        run: |
+          find . -name "*Studio*.xcodeproj" -maxdepth 3 -print | while read proj; do
+            xcodebuild -project "$proj" -configuration Release -quiet || true
+          done

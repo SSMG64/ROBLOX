@@ -1,0 +1,69 @@
+name: Client Release Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  windows:
+    name: Windows Release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Retarget Visual Studio toolset to v143
+        run: |
+          git ls-files "**/*.vcxproj" | %{ (Get-Content $_) -replace 'v141_xp','v143' | Set-Content $_ }
+        shell: pwsh
+      - name: Build solution (Release)
+        run: |
+          msbuild.exe Roblox.sln /m /p:Configuration=Release /p:Platform=x64
+        shell: pwsh
+
+  macos:
+    name: macOS Release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build macOS client (Release)
+        run: |
+          if [ -d "MacClient.xcodeproj" ]; then
+            xcodebuild -project MacClient.xcodeproj -configuration Release -quiet
+          else
+            echo "Mac project not found, skipping"
+          fi
+
+  android:
+    name: Android Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build Android (Release) if present
+        run: |
+          if [ -d "Android" ]; then
+            if [ -f "Android/gradlew" ]; then
+              cd Android && ./gradlew assembleRelease
+            else
+              echo "No gradle wrapper found in Android/, skipping"
+            fi
+          else
+            echo "Android directory not present, skipping"
+          fi
+
+  ios:
+    name: iOS Release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build iOS (Release) if present
+        run: |
+          if [ -d "iOS" ] || [ -f "RobloxPlayer-Info.plist" ]; then
+            echo "Attempting iOS build"
+            find . -name "*.xcodeproj" -maxdepth 3 -print | while read proj; do
+              xcodebuild -project "$proj" -configuration Release -quiet || true
+            done
+          else
+            echo "iOS sources not present, skipping"
+          fi
